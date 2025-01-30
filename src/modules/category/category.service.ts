@@ -2,16 +2,22 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 
+import { ProductDocument, Products } from '../product/product.schema';
 import { Categories, CategoryDocument } from './category.schema';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { ExistingCategoryException } from 'src/common/exceptions/category-exception';
+import {
+  ExistingCategoryException,
+  CategoryNotFoundException,
+} from 'src/common/exceptions/category-exception';
 
 @Injectable()
 export class CategoryService {
   constructor(
     @InjectModel(Categories.name)
     private categoryModel: Model<CategoryDocument>,
+    @InjectModel(Products.name)
+    private productModel: Model<ProductDocument>,
   ) {}
   async create(createCategoryDto: CreateCategoryDto) {
     const existingCategory = await this.categoryModel.findOne({
@@ -25,15 +31,37 @@ export class CategoryService {
   }
 
   async findAll() {
-    return this.categoryModel.find().exec();
+    const categories = await this.categoryModel.find({ parent: null }).exec();
+    const categoriesWithSubcategories = await Promise.all(
+      categories.map(async (category) => {
+        const subcategories = await this.categoryModel
+          .find({ parent: category.name })
+          .exec();
+        return {
+          ...category.toObject(),
+          subcategories,
+        };
+      }),
+    );
+    return categoriesWithSubcategories;
   }
 
   async findOne(id: string) {
     const category = await this.categoryModel.findById(id).exec();
     if (!category) {
-      throw new Error('Category not found');
+      throw new CategoryNotFoundException(id);
     }
-    return category;
+    const subcategories = await this.categoryModel
+      .find({ parent: category.name })
+      .exec();
+    const products = await this.productModel
+      .find({ category: category.name })
+      .exec();
+    return {
+      ...category.toObject(),
+      subcategories,
+      products,
+    };
   }
 
   async update(id: string, updateCategoryDto: UpdateCategoryDto) {
@@ -41,7 +69,7 @@ export class CategoryService {
       .findByIdAndUpdate(id, updateCategoryDto)
       .exec();
     if (!existingCategory) {
-      throw new Error('Category not found');
+      throw new CategoryNotFoundException(id);
     }
     return existingCategory;
   }
@@ -51,7 +79,7 @@ export class CategoryService {
       .findByIdAndDelete(id)
       .exec();
     if (!deletedCategory) {
-      throw new Error('Category not found');
+      throw new CategoryNotFoundException(id);
     }
     return deletedCategory;
   }

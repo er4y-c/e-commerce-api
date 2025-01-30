@@ -11,3 +11,9 @@ export class ParentCategoryNotFoundException extends NotFoundException {
     super(`Parent category "${parent}" not found`);
   }
 }
+
+export class CategoryNotFoundException extends NotFoundException {
+  constructor(category: string) {
+    super(`Category "${category}" not found`);
+  }
+}
