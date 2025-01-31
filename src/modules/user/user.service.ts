@@ -20,84 +20,58 @@ export class UserService {
     @InjectModel(Users.name) private userModel: Model<UsersDocument>,
   ) {}
 
-  async addShippingAddress(
+  async addAddress(
     userId: string | undefined,
-    shippingAddressDto: ShippingAddressDto,
+    addressDto: ShippingAddressDto | BillingAddressDto,
+    addressKey: 'userAddress' | 'billingAddress',
   ): Promise<{ message: string }> {
     if (!userId) {
       throw new UnauthorizedException('User not found');
     }
-
+    if (addressKey !== 'userAddress' && addressKey !== 'billingAddress') {
+      throw new BadRequestException('Invalid address key');
+    }
     const user = await this.userModel.findById(userId).exec();
     if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    if (shippingAddressDto.isDefault) {
-      const hasDefaultAddress = user.userAddress.some(
+    if (addressDto.isDefault) {
+      const hasDefaultAddress = user[addressKey].some(
         (address) => address.isDefault,
       );
       if (hasDefaultAddress) {
         throw new BadRequestException(
-          'Zaten bir varsayılan gönderim adresi mevcut',
+          `Default ${addressKey === 'userAddress' ? 'shipping' : 'billing'} address alredy exists`,
         );
       }
     }
 
-    user.userAddress.push({
-      ...shippingAddressDto,
+    user[addressKey].push({
+      ...addressDto,
       _id: new Types.ObjectId(),
     });
     await user.save();
     return { message: 'The address has been successfully added.' };
   }
 
-  async addBillingAddress(
-    userId: string | undefined,
-    billingAddressDto: BillingAddressDto,
-  ): Promise<{ message: string }> {
-    if (!userId) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const user = await this.userModel.findById(userId).exec();
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    if (billingAddressDto.isDefault) {
-      const hasDefaultAddress = user.billingAddress.some(
-        (address) => address.isDefault,
-      );
-      if (hasDefaultAddress) {
-        throw new BadRequestException(
-          'Zaten bir varsayılan fatura adresi mevcut',
-        );
-      }
-    }
-
-    user.billingAddress.push({
-      ...billingAddressDto,
-      _id: new Types.ObjectId(),
-    });
-    await user.save();
-    return { message: 'The address has been successfully added.' };
-  }
-
-  async updateDefaultShippingAddress(
+  async updateDefaultAddress(
     userId: string | undefined,
     addressId: string,
+    addressKey: 'userAddress' | 'billingAddress',
   ): Promise<{ message: string }> {
     const user = await this.userModel.findById(userId).exec();
     if (!user || !userId) {
       throw new UnauthorizedException('User not found');
     }
-
-    user.userAddress.forEach((address) => {
+    if (addressKey !== 'userAddress' && addressKey !== 'billingAddress') {
+      throw new BadRequestException('Invalid address key');
+    }
+    user[addressKey].forEach((address) => {
       address.isDefault = false;
     });
 
-    const address = user.userAddress.find(
+    const address = user[addressKey].find(
       (addr) => addr._id.toString() === addressId,
     );
     if (!address) {
@@ -106,32 +80,72 @@ export class UserService {
     address.isDefault = true;
 
     await user.save();
-    return { message: 'Default shipping address has been updated.' };
+    return { message: 'Default address has been updated.' };
   }
 
-  async updateDefaultBillingAddress(
+  async updateAddress(
     userId: string | undefined,
     addressId: string,
+    addressDto: UpdateShippingAddressDto | UpdateBillingAddressDto,
+    addressKey: 'userAddress' | 'billingAddress',
   ): Promise<{ message: string }> {
+    if (!userId) {
+      throw new UnauthorizedException('User not found');
+    }
+    if (addressKey !== 'userAddress' && addressKey !== 'billingAddress') {
+      throw new BadRequestException('Invalid address key');
+    }
     const user = await this.userModel.findById(userId).exec();
-    if (!user || !userId) {
+    if (!user) {
       throw new UnauthorizedException('User not found');
     }
 
-    user.billingAddress.forEach((address) => {
-      address.isDefault = false;
-    });
-
-    const address = user.billingAddress.find(
+    const addressIndex = user[addressKey].findIndex(
       (addr) => addr._id.toString() === addressId,
     );
-    if (!address) {
+    if (addressIndex === -1) {
       throw new BadRequestException('Address not found');
     }
-    address.isDefault = true;
+
+    user[addressKey][addressIndex] = {
+      ...user[addressKey][addressIndex],
+      ...addressDto,
+    };
 
     await user.save();
-    return { message: 'Default billing address has been updated.' };
+    return { message: 'The address has been successfully updated.' };
+  }
+
+  async deleteAddress(
+    userId: string | undefined,
+    addressId: string,
+    addressKey: 'userAddress' | 'billingAddress',
+  ): Promise<{ message: string }> {
+    if (!userId) {
+      throw new UnauthorizedException('User not found');
+    }
+    if (addressKey !== 'userAddress' && addressKey !== 'billingAddress') {
+      throw new BadRequestException('Invalid address key');
+    }
+    const user = await this.userModel.findById(userId).exec();
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const addressIndex = user[addressKey].findIndex(
+      (addr) => addr._id.toString() === addressId,
+    );
+    if (addressIndex === -1) {
+      throw new BadRequestException('Address not found');
+    }
+
+    if (user[addressKey][addressIndex].isDefault) {
+      throw new BadRequestException('Cannot delete default address');
+    }
+
+    user[addressKey].splice(addressIndex, 1);
+    await user.save();
+    return { message: 'The address has been successfully deleted.' };
   }
 
   async getAddressData(userId: string | undefined) {
@@ -142,123 +156,5 @@ export class UserService {
       .findById(userId, { userAddress: 1, billingAddress: 1, _id: 0 })
       .exec();
     return addressData;
-  }
-
-  async deleteShippingAddress(
-    userId: string | undefined,
-    addressId: string,
-  ): Promise<{ message: string }> {
-    if (!userId) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const user = await this.userModel.findById(userId).exec();
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const addressIndex = user.userAddress.findIndex(
-      (addr) => addr._id.toString() === addressId,
-    );
-    if (addressIndex === -1) {
-      throw new BadRequestException('Address not found');
-    }
-
-    if (user.userAddress[addressIndex].isDefault) {
-      throw new BadRequestException('Cannot delete default address');
-    }
-
-    user.userAddress.splice(addressIndex, 1);
-    await user.save();
-    return { message: 'The address has been successfully deleted.' };
-  }
-
-  async deleteBillingAddress(
-    userId: string | undefined,
-    addressId: string,
-  ): Promise<{ message: string }> {
-    if (!userId) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const user = await this.userModel.findById(userId).exec();
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const addressIndex = user.billingAddress.findIndex(
-      (addr) => addr._id.toString() === addressId,
-    );
-    if (addressIndex === -1) {
-      throw new BadRequestException('Address not found');
-    }
-
-    if (user.billingAddress[addressIndex].isDefault) {
-      throw new BadRequestException('Cannot delete default address');
-    }
-
-    user.billingAddress.splice(addressIndex, 1);
-    await user.save();
-    return { message: 'The address has been successfully deleted.' };
-  }
-
-  async updateShippingAddress(
-    userId: string | undefined,
-    addressId: string,
-    shippingAddressDto: UpdateShippingAddressDto,
-  ): Promise<{ message: string }> {
-    if (!userId) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const user = await this.userModel.findById(userId).exec();
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const addressIndex = user.userAddress.findIndex(
-      (addr) => addr._id.toString() === addressId,
-    );
-    if (addressIndex === -1) {
-      throw new BadRequestException('Address not found');
-    }
-
-    user.userAddress[addressIndex] = {
-      ...user.userAddress[addressIndex],
-      ...shippingAddressDto,
-    };
-
-    await user.save();
-    return { message: 'The address has been successfully updated.' };
-  }
-
-  async updateBillingAddress(
-    userId: string | undefined,
-    addressId: string,
-    billingAddressDto: UpdateBillingAddressDto,
-  ): Promise<{ message: string }> {
-    if (!userId) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const user = await this.userModel.findById(userId).exec();
-    if (!user) {
-      throw new UnauthorizedException('User not found');
-    }
-
-    const addressIndex = user.billingAddress.findIndex(
-      (addr) => addr._id.toString() === addressId,
-    );
-    if (addressIndex === -1) {
-      throw new BadRequestException('Address not found');
-    }
-
-    user.billingAddress[addressIndex] = {
-      ...user.billingAddress[addressIndex],
-      ...billingAddressDto,
-    };
-
-    await user.save();
-    return { message: 'The address has been successfully updated.' };
   }
 }

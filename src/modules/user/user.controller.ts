@@ -34,64 +34,37 @@ import {
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  @ApiOperation({ summary: 'Add shipping address to user' })
+  @ApiOperation({ summary: 'Add address to user' })
   @ApiBody({ type: ShippingAddressDto })
   @ApiResponse({
     status: HttpStatus.CREATED,
-    description: 'The address has been successfully added.',
-  })
-  @ApiResponse({
-    status: HttpStatus.NOT_FOUND,
-    description: 'User not found.',
+    description: 'The address has been successfully added',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Bad request.',
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized.',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Internal server error.',
-  })
-  @Post('shipping')
-  @HttpCode(HttpStatus.CREATED)
-  addShippingAddress(
-    @Req() req: Request,
-    @Body() shippingAddressDto: ShippingAddressDto,
-  ) {
-    const userId = req.user?._id;
-    return this.userService.addShippingAddress(userId, shippingAddressDto);
-  }
-
-  @ApiOperation({ summary: 'Add billing address to user' })
-  @ApiBody({ type: BillingAddressDto })
-  @ApiResponse({
-    status: HttpStatus.CREATED,
-    description: 'The address has been successfully added.',
+    description: 'Invalid address key',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Bad request.',
+    description: 'Default address already exists',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
-    description: 'Unauthorized.',
+    description: 'Unauthorized',
   })
   @ApiResponse({
     status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Internal server error.',
+    description: 'Internal server error',
   })
-  @Post('billing')
+  @Post(':addressKey')
   @HttpCode(HttpStatus.CREATED)
-  addBillingAddress(
+  addAddress(
     @Req() req: Request,
-    @Body() billingAddressDto: BillingAddressDto,
+    @Body() addressDto: ShippingAddressDto | BillingAddressDto,
+    @Param('addressKey') addressKey: 'userAddress' | 'billingAddress',
   ) {
     const userId = req.user?._id;
-    return this.userService.addBillingAddress(userId, billingAddressDto);
+    return this.userService.addAddress(userId, addressDto, addressKey);
   }
 
   @ApiOperation({ summary: 'Get user address data' })
@@ -118,14 +91,18 @@ export class UserController {
     return this.userService.getAddressData(userId);
   }
 
-  @ApiOperation({ summary: 'Update default shipping address' })
+  @ApiOperation({ summary: 'Update default address' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Default shipping address updated.',
+    description: 'Default address updated.',
   })
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Address not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid address key.',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -135,44 +112,18 @@ export class UserController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error.',
   })
-  @Patch('shipping/default/:addressId')
+  @Patch(':addressKey/default/:addressId')
   @HttpCode(HttpStatus.OK)
-  updateDefaultShippingAddress(
+  updateDefaultAddress(
     @Req() req: Request,
     @Param('addressId') addressId: string,
+    @Param('addressKey') addressKey: 'userAddress' | 'billingAddress',
   ) {
     const userId = req.user?._id;
-    return this.userService.updateDefaultShippingAddress(userId, addressId);
+    return this.userService.updateDefaultAddress(userId, addressId, addressKey);
   }
 
-  @ApiOperation({ summary: 'Update default shipping address' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'Default shipping address updated.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Address not found.',
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'User not found.',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Internal server error.',
-  })
-  @Patch('billing/default/:addressId')
-  @HttpCode(HttpStatus.OK)
-  updateDefaultBillingAddress(
-    @Req() req: Request,
-    @Param('addressId') addressId: string,
-  ) {
-    const userId = req.user?._id;
-    return this.userService.updateDefaultBillingAddress(userId, addressId);
-  }
-
-  @ApiOperation({ summary: 'Update shipping address' })
+  @ApiOperation({ summary: 'Update address' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'The address has been successfully updated.',
@@ -180,6 +131,10 @@ export class UserController {
   @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
     description: 'Address not found.',
+  })
+  @ApiResponse({
+    status: HttpStatus.BAD_REQUEST,
+    description: 'Invalid address key.',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -190,55 +145,24 @@ export class UserController {
     description: 'Internal server error.',
   })
   @ApiBody({ type: UpdateShippingAddressDto })
-  @Put('shipping/update/:addressId')
+  @Put(':addressKey/update/:addressId')
   @HttpCode(HttpStatus.OK)
-  updateShippingAddress(
+  updateAddress(
     @Req() req: Request,
     @Param('addressId') addressId: string,
-    @Body() shippingAddressDto: UpdateShippingAddressDto,
+    @Body() addressDto: UpdateShippingAddressDto | UpdateBillingAddressDto,
+    @Param('addressKey') addressKey: 'userAddress' | 'billingAddress',
   ) {
     const userId = req.user?._id;
-    return this.userService.updateShippingAddress(
+    return this.userService.updateAddress(
       userId,
       addressId,
-      shippingAddressDto,
+      addressDto,
+      addressKey,
     );
   }
 
-  @ApiOperation({ summary: 'Update billing address' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'The address has been successfully updated.',
-  })
-  @ApiResponse({
-    status: HttpStatus.BAD_REQUEST,
-    description: 'Address not found.',
-  })
-  @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'User not found.',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Internal server error.',
-  })
-  @ApiBody({ type: UpdateBillingAddressDto })
-  @Put('billing/update/:addressId')
-  @HttpCode(HttpStatus.OK)
-  updateBillingAddress(
-    @Req() req: Request,
-    @Param('addressId') addressId: string,
-    @Body() billingAddressDto: UpdateBillingAddressDto,
-  ) {
-    const userId = req.user?._id;
-    return this.userService.updateBillingAddress(
-      userId,
-      addressId,
-      billingAddressDto,
-    );
-  }
-
-  @ApiOperation({ summary: 'Delete shipping address' })
+  @ApiOperation({ summary: 'Delete address' })
   @ApiResponse({
     status: HttpStatus.OK,
     description: 'The address has been successfully deleted.',
@@ -248,31 +172,8 @@ export class UserController {
     description: 'Cannot delete default address or address not found.',
   })
   @ApiResponse({
-    status: HttpStatus.UNAUTHORIZED,
-    description: 'User not found.',
-  })
-  @ApiResponse({
-    status: HttpStatus.INTERNAL_SERVER_ERROR,
-    description: 'Internal server error.',
-  })
-  @Delete('shipping/delete/:addressId')
-  @HttpCode(HttpStatus.OK)
-  deleteShippingAddress(
-    @Req() req: Request,
-    @Param('addressId') addressId: string,
-  ) {
-    const userId = req.user?._id;
-    return this.userService.deleteShippingAddress(userId, addressId);
-  }
-
-  @ApiOperation({ summary: 'Delete billing address' })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'The address has been successfully deleted.',
-  })
-  @ApiResponse({
     status: HttpStatus.BAD_REQUEST,
-    description: 'Cannot delete default address or address not found.',
+    description: 'Invalid address key.',
   })
   @ApiResponse({
     status: HttpStatus.UNAUTHORIZED,
@@ -282,13 +183,14 @@ export class UserController {
     status: HttpStatus.INTERNAL_SERVER_ERROR,
     description: 'Internal server error.',
   })
-  @Delete('billing/delete/:addressId')
+  @Delete(':addressKey/delete/:addressId')
   @HttpCode(HttpStatus.OK)
-  deleteBillingAddress(
+  deleteAddress(
     @Req() req: Request,
     @Param('addressId') addressId: string,
+    @Param('addressKey') addressKey: 'userAddress' | 'billingAddress',
   ) {
     const userId = req.user?._id;
-    return this.userService.deleteBillingAddress(userId, addressId);
+    return this.userService.deleteAddress(userId, addressId, addressKey);
   }
 }
