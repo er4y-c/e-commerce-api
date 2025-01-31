@@ -1,8 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import { Types } from 'mongoose';
 
 @Schema()
 export class Address {
+  @Prop({ type: Types.ObjectId, auto: true })
+  _id: Types.ObjectId;
+
   @Prop()
   isDefault: boolean;
 
@@ -47,10 +51,10 @@ export class Users {
   @Prop()
   role: string;
 
-  @Prop()
+  @Prop({ type: [AddressSchema] })
   userAddress: Address[];
 
-  @Prop()
+  @Prop({ type: [AddressSchema] })
   billingAddress: Address[];
 }
 
