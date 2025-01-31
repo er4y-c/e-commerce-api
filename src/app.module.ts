@@ -6,6 +6,8 @@ import config from './common/config';
 import { ProductModule } from './modules/product/product.module';
 import { CategoryModule } from './modules/category/category.module';
 import { BasketModule } from './modules/basket/basket.module';
+import { UserModule } from './modules/user/user.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -17,6 +19,8 @@ import { BasketModule } from './modules/basket/basket.module';
       load: [config],
     }),
     MongooseModule.forRoot(config().mongo),
+    UserModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
