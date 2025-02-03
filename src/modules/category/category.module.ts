@@ -4,6 +4,10 @@ import { CategoryService } from './category.service';
 import { CategoryController } from './category.controller';
 import { Categories, CategorySchema } from './category.schema';
 import { Products, ProductSchema } from '../product/product.schema';
+import {
+  ValidateParentCategoryPipe,
+  ValidateExistsCategoryPipe,
+} from 'src/common/pipes/category.pipe';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -12,6 +16,10 @@ import { Products, ProductSchema } from '../product/product.schema';
     MongooseModule.forFeature([{ name: Products.name, schema: ProductSchema }]),
   ],
   controllers: [CategoryController],
-  providers: [CategoryService],
+  providers: [
+    CategoryService,
+    ValidateParentCategoryPipe,
+    ValidateExistsCategoryPipe,
+  ],
 })
 export class CategoryModule {}
