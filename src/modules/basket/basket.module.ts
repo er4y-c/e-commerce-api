@@ -17,5 +17,9 @@ import { StockValidationPipe } from 'src/common/pipes/basket.pipe';
   ],
   controllers: [BasketController],
   providers: [BasketService, ProductService, StockValidationPipe],
+  exports: [
+    BasketService,
+    MongooseModule.forFeature([{ name: Products.name, schema: ProductSchema }]),
+  ],
 })
 export class BasketModule {}

@@ -11,7 +11,14 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.useGlobalPipes(new ValidationPipe());
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.enableCors();
 
+  app.enableCors({
+    origin: ['http://localhost:3000'], // Kendi frontend adresinizi yazın
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  });
   const documentConfig = new DocumentBuilder()
     .setTitle('E-Commerce API')
     .setDescription('Example of an E-Commerce Rest API')
