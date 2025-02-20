@@ -56,6 +56,9 @@ export class Users {
 
   @Prop({ type: [AddressSchema] })
   billingAddress: Address[];
+
+  @Prop()
+  identityNumber: string;
 }
 
 export type UsersDocument = HydratedDocument<Users>;

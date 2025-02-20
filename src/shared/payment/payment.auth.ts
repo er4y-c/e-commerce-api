@@ -19,6 +19,7 @@ export class PaymentAuthorization {
   public get _randomKey(): string {
     return this.randomKey;
   }
+
   public withPayload(): PaymentAuthorization {
     const payload = this.requestData
       ? this.randomKey + this.requestPath + JSON.stringify(this.requestData)

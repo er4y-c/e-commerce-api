@@ -6,9 +6,12 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
+import { Request } from 'express';
+
+import { ReqUser } from 'src/common/decorators/requser.decorator';
 import { OrderService } from './order.service';
 import { BasketService } from '../basket/basket.service';
-import { BinCheckDto, InstallmentCheckDto } from './dto';
+import { BinCheckDto, InstallmentCheckDto, InitOrderDto } from './dto';
 
 @ApiTags('order')
 @ApiBearerAuth()
@@ -39,5 +42,19 @@ export class OrderController {
   @Post('installment')
   installmentCheck(@Body() installmentCheckDto: InstallmentCheckDto) {
     return this.orderService.installmentCheck(installmentCheckDto);
+  }
+
+  @ApiOperation({ summary: 'Initialize the payment' })
+  @ApiBody({ type: InitOrderDto })
+  @ApiResponse({ status: 200, description: 'Payment initialization response' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @Post('initialize')
+  initPayment(
+    @ReqUser() userInfo: Request['user'],
+    @Body() initOrderDto: InitOrderDto,
+  ) {
+    return this.orderService.initPayment(initOrderDto, userInfo);
   }
 }

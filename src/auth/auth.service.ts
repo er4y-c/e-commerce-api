@@ -100,6 +100,7 @@ export class AuthService {
       currentUser.role,
       currentUser.userAddress,
       currentUser.billingAddress,
+      currentUser.identityNumber,
     );
     return userEntity;
   }

@@ -141,3 +141,63 @@ export interface IBillingMetadata {
   billingCountry: string;
   billingCity: string;
 }
+
+export interface PaymentInitiliazeResponse {
+  status: string;
+  errorCode?: string;
+  errorMessage?: string;
+  locale: string;
+  systemTime: number;
+  conversationId: string;
+  threeDSHtmlContent?: string;
+  paymentId?: string;
+}
+
+export interface BinCheckResponse {
+  binNumber: string;
+  cardType?: string;
+  cardAssociation?: string;
+  cardFamily?: string;
+  bankName?: string;
+  bankCode?: number;
+  commercial?: number;
+  status: string;
+  locale: string;
+  systemTime: number;
+  conversationId: string;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+export interface PaymentAuthResponse {
+  status: string; // success or failure
+  errorCode?: string; // Present if status is failure
+  errorMessage?: string; // Error message based on locale
+  errorGroup?: string; // Error group classification
+  locale: string; // Default: 'tr'
+  systemTime: number; // Unix timestamp
+  conversationId?: string; // Optional, returned if sent in request
+  paymentId: string; // Must be stored by the merchant
+  price: number; // Total basket price
+  paidPrice: number; // Final paid amount
+  currency: string; // Payment currency
+  installment: number; // Installment info, 1 for single payment
+  paymentStatus:
+    | 'SUCCESS'
+    | 'FAILURE'
+    | 'INIT_THREEDS'
+    | 'CALLBACK_THREEDS'
+    | 'BKM_POS_SELECTED'
+    | 'CALLBACK_PECCO';
+  basketId?: string; // Basket ID sent by merchant
+  binNumber?: string; // First 6 digits of the card used
+  cardAssociation?: 'VISA' | 'MASTER_CARD' | 'AMERICAN_EXPRESS' | 'TROY';
+  cardFamily?: string; // e.g., Bonus, Axess, etc.
+  cardType?: 'CREDIT_CARD' | 'DEBIT_CARD' | 'PREPAID_CARD';
+  fraudStatus?: -1 | 0 | 1; // Fraud check result
+  iyziCommissionFee?: number; // Transaction fee
+  iyziCommissionRateAmount?: number; // Commission amount
+  merchantCommissionRate?: number; // Merchant's commission rate
+  merchantCommissionRateAmount?: number; // Merchant's commission amount
+  itemTransactions: ItemTransaction[]; // Array of individual transactions
+}

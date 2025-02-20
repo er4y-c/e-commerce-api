@@ -11,6 +11,7 @@ export class User {
   role: string;
   userAddress: Address[];
   billingAddress: Address[];
+  identityNumber: string;
 
   constructor(
     _id: string,
@@ -23,6 +24,7 @@ export class User {
     role: string,
     userAddress: Address[],
     billingAddress: Address[],
+    identityNumber: string,
   ) {
     this._id = _id;
     this.name = name;
@@ -34,5 +36,6 @@ export class User {
     this.role = role;
     this.userAddress = userAddress;
     this.billingAddress = billingAddress;
+    this.identityNumber = identityNumber;
   }
 }

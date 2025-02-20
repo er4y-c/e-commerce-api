@@ -1,29 +1,35 @@
 import { ApiProperty } from '@nestjs/swagger';
-
-import { Buyer, PaymentCard } from 'src/modules/order/entities';
+import { ValidateNested } from 'class-validator';
+import { Type } from 'class-transformer';
 
 import {
   SupportedCurrencies,
   PaymentLocales,
 } from 'src/shared/payment/payment.interface';
 
+export class PaymentCardDto {
+  @ApiProperty()
+  cardHolderName: string;
+
+  @ApiProperty()
+  cardNumber: string;
+
+  @ApiProperty()
+  expireMonth: string;
+
+  @ApiProperty()
+  expireYear: string;
+
+  @ApiProperty()
+  cvc: string;
+
+  @ApiProperty()
+  cardAlias: string;
+}
+
 export class InitOrderDto {
   @ApiProperty({
-    type: Buyer,
-    example: {
-      id: '5f4b9b2b-5f4b-9b2b-5f4b-9b2b5f4b9b2b',
-      name: 'John Doe',
-      email: 'johndoe@gmail.com',
-      phone: '905555555555',
-      identityNumber: '11111111111',
-    },
-    description:
-      'Buyer information. The buyer data must be user of the system.',
-  })
-  buyer: Buyer;
-
-  @ApiProperty({
-    type: PaymentCard,
+    type: PaymentCardDto,
     example: {
       cardHolderName: 'John Doe',
       cardNumber: '5528790000000008',
@@ -32,7 +38,9 @@ export class InitOrderDto {
       cvc: '123',
     },
   })
-  paymentCard: PaymentCard;
+  @ValidateNested()
+  @Type(() => PaymentCardDto)
+  paymentCard: PaymentCardDto;
 
   @ApiProperty({
     enum: SupportedCurrencies,
