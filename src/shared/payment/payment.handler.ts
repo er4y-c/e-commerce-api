@@ -30,9 +30,8 @@ export class PaymentHandler {
         },
       });
       return res.data;
-    } catch (error) {
-      console.error(error);
-      return { error: (error as Error).message };
+    } catch {
+      throw new Error('Payment request failed');
     }
   };
 }

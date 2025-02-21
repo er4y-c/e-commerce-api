@@ -60,12 +60,6 @@ export class Orders {
   price: number;
 
   @Prop()
-  created_at: Date;
-
-  @Prop()
-  updated_at: Date;
-
-  @Prop()
   currency: string;
 
   @Prop()
@@ -84,6 +78,12 @@ export class Orders {
   paymentGroup: string;
 
   @Prop()
+  paymentStatus: string;
+
+  @Prop()
+  orderStatus: string;
+
+  @Prop()
   paymentId: string;
 
   @Prop()
@@ -100,6 +100,9 @@ export class Orders {
 
   @Prop()
   basketItems: BasketItem[];
+
+  @Prop({ required: false })
+  paymentTransactionId?: string;
 }
 
 export type OrderDocument = HydratedDocument<Orders>;

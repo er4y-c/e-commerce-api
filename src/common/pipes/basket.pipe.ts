@@ -4,6 +4,7 @@ import {
   ArgumentMetadata,
   HttpException,
   HttpStatus,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
@@ -48,9 +49,8 @@ export class StockValidationPipe implements PipeTransform {
       }
 
       return value;
-    } catch (error) {
-      console.error('Stock validation error:', error);
-      throw error;
+    } catch {
+      throw new InternalServerErrorException(value.productId);
     }
   }
 }

@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Request } from 'express';
@@ -10,7 +14,11 @@ import { Products, ProductDocument } from '../product/product.schema';
 import { BinCheckResponse, InstallmentCheckResponse } from 'src/shared/payment';
 import { PaymentHandler } from 'src/shared/payment/payment.handler';
 import { BinCheckDto, InstallmentCheckDto, InitOrderDto } from './dto';
-import { PaymentInitiliazeResponse } from 'src/shared/payment';
+import {
+  PaymentInitiliazeResponse,
+  PaymentAuthResponse,
+  PaymentStatus,
+} from 'src/shared/payment';
 
 @Injectable()
 export class OrderService {
@@ -52,7 +60,7 @@ export class OrderService {
     );
     const data = (await paymentHandler.send()) as BinCheckResponse;
     if (data.status !== 'success') {
-      throw new BadRequestException(data.errorMessage);
+      throw new BadRequestException(data);
     }
     return data;
   }
@@ -132,12 +140,35 @@ export class OrderService {
     }
     void this.orderModel.create({
       basketId: initOrderDto.basketId,
-      paymentStatus: 'PENDING',
+      paymentStatus: PaymentStatus.INITIALIZED,
       paymentAmount: this.calculateTotalPrice(initOrderDto.basketId),
       paymentCurrency: initOrderDto.currency,
       paymentId: paymentResponse.paymentId,
       paymentDate: new Date(),
     });
     return paymentResponse;
+  }
+
+  async authPayment(orderId: string, userId: string) {
+    const order = await this.orderModel.findById(orderId);
+    if (!order) {
+      throw new BadRequestException('Order not found');
+    }
+    if (order.buyer.id.toString() !== userId.toString()) {
+      throw new UnauthorizedException('Unauthorized order');
+    }
+
+    const { paymentId, paidPrice, currency, basketId } = order;
+    const paymentHandler = new PaymentHandler(
+      { paymentId, paidPrice, currency, basketId },
+      '/payment/3dsecure/auth',
+    );
+    const data = (await paymentHandler.send()) as PaymentAuthResponse;
+    if (data.status !== 'success') {
+      throw new BadRequestException(data.errorMessage);
+    }
+    order.paymentStatus = PaymentStatus.SUCCESS;
+    await order.save();
+    return data;
   }
 }

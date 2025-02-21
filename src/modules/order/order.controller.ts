@@ -1,26 +1,23 @@
-import { Controller, Body, Post } from '@nestjs/common';
+import { Controller, Body, Post, Param } from '@nestjs/common';
 import {
   ApiOperation,
   ApiBearerAuth,
   ApiBody,
   ApiResponse,
+  ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
 import { Request } from 'express';
 
 import { ReqUser } from 'src/common/decorators/requser.decorator';
 import { OrderService } from './order.service';
-import { BasketService } from '../basket/basket.service';
 import { BinCheckDto, InstallmentCheckDto, InitOrderDto } from './dto';
 
 @ApiTags('order')
 @ApiBearerAuth()
 @Controller('api/order')
 export class OrderController {
-  constructor(
-    private readonly orderService: OrderService,
-    private readonly basketService: BasketService,
-  ) {}
+  constructor(private readonly orderService: OrderService) {}
 
   @ApiOperation({ summary: 'Check the bin number' })
   @ApiBody({ type: BinCheckDto })
@@ -56,5 +53,16 @@ export class OrderController {
     @Body() initOrderDto: InitOrderDto,
   ) {
     return this.orderService.initPayment(initOrderDto, userInfo);
+  }
+
+  @ApiOperation({ summary: 'Complete the payment' })
+  @ApiResponse({ status: 200, description: 'Payment completion response' })
+  @ApiResponse({ status: 400, description: 'Bad request' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiResponse({ status: 500, description: 'Internal server error' })
+  @ApiParam({ name: 'id', type: 'string' })
+  @Post('auth/:id')
+  authPayment(@Param('id') id: string, @ReqUser('_id') userId: string) {
+    return this.orderService.authPayment(id, userId);
   }
 }
