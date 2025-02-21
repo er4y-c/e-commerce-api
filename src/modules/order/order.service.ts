@@ -3,15 +3,18 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { Request } from 'express';
 
+import config from 'src/common/config';
 import { Orders, OrderDocument } from './order.schema';
 import { Basket, BasketDocument } from '../basket/basket.schema';
 import { Products, ProductDocument } from '../product/product.schema';
+import { BinCheckResponse, InstallmentCheckResponse } from 'src/shared/payment';
 import { PaymentHandler } from 'src/shared/payment/payment.handler';
 import { BinCheckDto, InstallmentCheckDto, InitOrderDto } from './dto';
 import { PaymentInitiliazeResponse } from 'src/shared/payment';
 
 @Injectable()
 export class OrderService {
+  private callbackUrl = config().iyzico_callback_url;
   constructor(
     @InjectModel(Orders.name) private orderModel: Model<OrderDocument>,
     @InjectModel(Basket.name) private basketModel: Model<BasketDocument>,
@@ -41,31 +44,39 @@ export class OrderService {
     return totalPrice;
   }
 
-  binCheck(binCheckDto: BinCheckDto) {
+  async binCheck(binCheckDto: BinCheckDto) {
     const { binNumber, locale, conversationId } = binCheckDto;
     const paymentHandler = new PaymentHandler(
       { binNumber, locale, conversationId },
       '/payment/bin/check',
     );
-    return paymentHandler.send();
+    const data = (await paymentHandler.send()) as BinCheckResponse;
+    if (data.status !== 'success') {
+      throw new BadRequestException(data.errorMessage);
+    }
+    return data;
   }
 
-  installmentCheck(installmentCheckDto: InstallmentCheckDto) {
+  async installmentCheck(installmentCheckDto: InstallmentCheckDto) {
     const { binNumber, price, conversationId, locale } = installmentCheckDto;
     const paymentHandler = new PaymentHandler(
       { binNumber, price, conversationId, locale },
       '/payment/iyzipos/installment',
     );
-    return paymentHandler.send();
+    const data = (await paymentHandler.send()) as InstallmentCheckResponse;
+    if (data.status !== 'success') {
+      throw new BadRequestException(data.errorMessage);
+    }
+    return data;
   }
 
   async initPayment(initOrderDto: InitOrderDto, userInfo: Request['user']) {
     const basket = await this.basketModel
-      .findOne({ userId: userInfo?._id })
+      .findOne({ _id: initOrderDto.basketId })
       .populate('items.productId');
 
     if (!basket) {
-      throw new Error('Basket not found');
+      throw new BadRequestException('Basket not found');
     }
 
     const paymentDetails = {
@@ -109,6 +120,7 @@ export class OrderService {
         installments: initOrderDto.installments,
         shippingAddress: userAddress,
         billingAddress,
+        callbackUrl: this.callbackUrl,
       },
       '/payment/iyzipos/initialize',
     );
@@ -118,5 +130,14 @@ export class OrderService {
     if (paymentResponse.status !== 'success') {
       throw new BadRequestException(paymentResponse.errorMessage);
     }
+    void this.orderModel.create({
+      basketId: initOrderDto.basketId,
+      paymentStatus: 'PENDING',
+      paymentAmount: this.calculateTotalPrice(initOrderDto.basketId),
+      paymentCurrency: initOrderDto.currency,
+      paymentId: paymentResponse.paymentId,
+      paymentDate: new Date(),
+    });
+    return paymentResponse;
   }
 }

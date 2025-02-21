@@ -69,9 +69,6 @@ export class Orders {
   currency: string;
 
   @Prop()
-  callbackUrl: string;
-
-  @Prop()
   locale: string;
 
   @Prop()
@@ -85,6 +82,9 @@ export class Orders {
 
   @Prop()
   paymentGroup: string;
+
+  @Prop()
+  paymentId: string;
 
   @Prop()
   basketId: Types.ObjectId;

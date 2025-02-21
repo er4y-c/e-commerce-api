@@ -6,5 +6,6 @@ export default () => ({
   iyzico_api: process.env.IYZICO_API,
   iyzico_api_key: process.env.IYZICO_API_KEY,
   iyzico_secret_key: process.env.IYZICO_SECRET_KEY,
+  iyzico_callback_url: process.env.IYZICO_CALLBACK_URL,
   payment_base_callback_uri: process.env.PAYMENT_BASE_CALLBACK_URI,
 });

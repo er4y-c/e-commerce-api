@@ -169,6 +169,33 @@ export interface BinCheckResponse {
   errorMessage?: string;
 }
 
+export interface InstallmentDetail {
+  installmentPrices: {
+    installmentNumber: number;
+    totalPrice: number;
+    installmentPrice: number;
+  }[];
+  binNumber: string;
+  price: number;
+  cardFamilyName: string;
+  cardAssociation: string;
+  cardType: string;
+  bankCode: number;
+  bankName: string;
+  force3ds: number;
+  forceCvc: number;
+}
+
+export interface InstallmentCheckResponse {
+  status: string;
+  errorCode?: string;
+  errorMessage?: string;
+  locale: string;
+  systemTime: number;
+  conversationId: string;
+  installmentDetails: InstallmentDetail;
+}
+
 export interface PaymentAuthResponse {
   status: string; // success or failure
   errorCode?: string; // Present if status is failure

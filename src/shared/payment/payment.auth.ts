@@ -1,5 +1,4 @@
-import CryptoJS from 'crypto-js';
-
+import * as CryptoJS from 'crypto-js';
 import config from 'src/common/config';
 
 export class PaymentAuthorization {
@@ -29,23 +28,15 @@ export class PaymentAuthorization {
   }
 
   public withEncryptedData(): PaymentAuthorization {
-    const encryptedData = CryptoJS.HmacSHA256(
-      this.hashPayload,
-      config().iyzico_secret_key as string,
-    );
-    this.encryptedData = encryptedData;
+    const secretKey = config().iyzico_secret_key as string;
+    this.encryptedData = CryptoJS.HmacSHA256(this.hashPayload, secretKey);
     return this;
   }
 
   public withAuthorizationString(): PaymentAuthorization {
-    const authString =
-      'apiKey:' +
-      config().iyzico_api_key +
-      '&randomKey:' +
-      this.randomKey +
-      '&signature:' +
-      CryptoJS.enc.Base64.stringify(this.encryptedData);
-    this.authorizationString = authString;
+    const apiKey = config().iyzico_api_key;
+    const signature = CryptoJS.enc.Base64.stringify(this.encryptedData);
+    this.authorizationString = `apiKey:${apiKey}&randomKey:${this.randomKey}&signature:${signature}`;
     return this;
   }
 
@@ -53,7 +44,6 @@ export class PaymentAuthorization {
     const base64EncodedAuthorization = CryptoJS.enc.Base64.stringify(
       CryptoJS.enc.Utf8.parse(this.authorizationString),
     );
-    const authString = 'IYZWSv2 ' + base64EncodedAuthorization;
-    return authString;
+    return `IYZWSv2 ${base64EncodedAuthorization}`;
   }
 }
